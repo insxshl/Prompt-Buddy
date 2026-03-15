@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Prompt Buddy</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --purple: #7c3aed;
+  --pink:   #ec4899;
+  --yellow: #fbbf24;
+  --bg:     #0d0a1a;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-x: hidden;
+  overflow-y: auto;
+  position: relative;
+  padding: 24px 16px;
+}
+
+.blob {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.3;
+  animation: blobFloat 8s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+.blob-1 { width:400px; height:400px; background:#7c3aed; top:-120px; left:-100px; animation-delay:0s; }
+.blob-2 { width:300px; height:300px; background:#ec4899; bottom:-80px; right:-60px; animation-delay:2.5s; }
+.blob-3 { width:180px; height:180px; background:#fbbf24; top:50%; left:60%; animation-delay:5s; }
+@keyframes blobFloat {
+  0%,100% { transform: translate(0,0) scale(1); }
+  50%      { transform: translate(20px,-25px) scale(1.07); }
+}
+
+body::before {
+  content:'';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.chip {
+  position: fixed;
+  font-family: 'Syne', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.05);
+  color: rgba(255,255,255,.45);
+  pointer-events: none;
+  backdrop-filter: blur(6px);
+  z-index: 1;
+  animation: chipDrift 10s ease-in-out infinite;
+}
+.chip-1 { top:10%; left:4%;  animation-delay:0s; }
+.chip-2 { top:18%; right:5%; animation-delay:3s; }
+.chip-3 { bottom:20%; left:5%; animation-delay:6s; }
+.chip-4 { bottom:10%; right:6%; animation-delay:1.5s; }
+@keyframes chipDrift {
+  0%,100% { transform: translateY(0px); }
+  50%      { transform: translateY(-12px); }
+}
+@media (max-width: 480px) { .chip { display: none; } }
+
+/* PAGE SYSTEM */
+.page { display: none; width: 100%; }
+.page.active { display: flex; justify-content: center; }
+
+/* CARD */
+.card {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 28px;
+  padding: 36px 22px 32px;
+  text-align: center;
+  backdrop-filter: blur(20px);
+  box-shadow:
+    0 0 0 1px rgba(124,58,237,.2),
+    0 30px 60px rgba(0,0,0,.6),
+    inset 0 1px 0 rgba(255,255,255,.08);
+  z-index: 2;
+}
+.card.wide { max-width: 520px; text-align: left; }
+
+.animate { animation: cardIn .6s cubic-bezier(.22,1,.36,1) both; }
+@keyframes cardIn {
+  from { opacity:0; transform: translateY(30px) scale(.97); }
+  to   { opacity:1; transform: translateY(0) scale(1); }
+}
+
+/* BACK BTN */
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #64748b;
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-bottom: 24px;
+  padding: 0;
+  font-family: 'DM Sans', sans-serif;
+  transition: color .2s;
+}
+.back-btn:hover { color: #a78bfa; }
+
+/* BADGE */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(124,58,237,.3), rgba(236,72,153,.3));
+  border: 1px solid rgba(236,72,153,.35);
+  color: #f0abfc;
+  margin-bottom: 22px;
+}
+.badge-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #ec4899;
+  box-shadow: 0 0 8px #ec4899;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50%      { opacity:.5; transform:scale(1.4); }
+}
+
+/* LOGO */
+.logo-wrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 18px;
+}
+.logo-wrap::before {
+  content:'';
+  position: absolute; inset: -10px;
+  border-radius: 35px;
+  background: conic-gradient(from 0deg, #7c3aed, #ec4899, #fbbf24, #22d3ee, #7c3aed);
+  animation: spin 4s linear infinite;
+  z-index: -1;
+  filter: blur(12px);
+  opacity: .7;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.logo {
+  width: 105px; height: 105px;
+  border-radius: 24px;
+  object-fit: cover;
+  display: block;
+  border: 2px solid rgba(255,255,255,.15);
+}
+.logo-fallback {
+  width: 105px; height: 105px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #7c3aed, #ec4899);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 44px;
+  border: 2px solid rgba(255,255,255,.15);
+}
+
+h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(26px, 8vw, 34px);
+  font-weight: 800;
+  background: linear-gradient(90deg, #a78bfa, #ec4899, #fbbf24);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 10px;
+}
+
+p.desc {
+  color: #94a3b8;
+  font-size: 14px;
+  line-height: 1.65;
+  margin-bottom: 26px;
+}
+p.desc span { color: #c4b5fd; font-weight: 600; }
+
+/* STATS */
+.stats {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 26px;
+}
+.stat { flex: 1; padding: 0 4px; }
+.stat-val {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(14px, 4vw, 18px);
+  font-weight: 800;
+  background: linear-gradient(90deg, #a78bfa, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.stat-lbl {
+  font-size: clamp(9px, 2.5vw, 11px);
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.stat-div { width:1px; height:32px; background:rgba(255,255,255,.1); flex-shrink:0; }
+
+/* DOWNLOAD BTN */
+.dl-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 18px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #7c3aed, #ec4899);
+  color: #fff;
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(15px, 4vw, 17px);
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 10px 30px rgba(124,58,237,.45), inset 0 1px 0 rgba(255,255,255,.2);
+  transition: transform .2s, box-shadow .2s, filter .2s;
+  position: relative; overflow: hidden;
+}
+.dl-btn::after {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.15),transparent);
+  opacity:0; transition:opacity .2s;
+}
+.dl-btn:hover { transform:translateY(-3px); box-shadow:0 16px 40px rgba(124,58,237,.55); filter:brightness(1.08); }
+.dl-btn:hover::after { opacity:1; }
+.dl-btn:active { transform:scale(.97); }
+
+/* FOOTER NAV */
+.footer-nav {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+.footer-nav button {
+  font-size: 12px;
+  color: #64748b;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: color .2s;
+  padding: 0;
+}
+.footer-nav button:hover { color: #a78bfa; }
+.footer-nav-dot { width:3px; height:3px; border-radius:50%; background:#1e293b; }
+
+.version {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.version-dot { width:4px; height:4px; border-radius:50%; background:#1e293b; }
+.safe-badge {
+  display:inline-flex; align-items:center; gap:4px;
+  color:#4ade80; font-size:11px; font-weight:600;
+}
+.safe-badge svg { width:12px; height:12px; }
+
+/* ── CONTACT PAGE ── */
+.page-icon {
+  width:60px; height:60px;
+  border-radius:16px;
+  background:linear-gradient(135deg,#7c3aed,#ec4899);
+  display:flex; align-items:center; justify-content:center;
+  font-size:26px;
+  margin:0 auto 16px;
+  box-shadow:0 8px 24px rgba(124,58,237,.35);
+}
+.page-title {
+  font-family:'Syne',sans-serif;
+  font-size:clamp(22px,6vw,28px);
+  font-weight:800;
+  background:linear-gradient(90deg,#a78bfa,#ec4899,#fbbf24);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  margin-bottom:6px;
+  text-align:center;
+}
+.page-subtitle { font-size:13px; color:#64748b; margin-bottom:26px; text-align:center; }
+
+.contact-list { display:flex; flex-direction:column; gap:10px; margin-bottom:24px; }
+.contact-item {
+  display:flex; align-items:center; gap:14px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:14px; padding:14px 16px;
+  text-decoration:none;
+  transition:border-color .2s, background .2s, transform .2s;
+}
+.contact-item:hover {
+  border-color:rgba(124,58,237,.4);
+  background:rgba(124,58,237,.08);
+  transform:translateY(-2px);
+}
+.ci-icon {
+  width:40px; height:40px; border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px; flex-shrink:0;
+}
+.ci-icon.purple { background:rgba(124,58,237,.2); }
+.ci-icon.pink   { background:rgba(236,72,153,.2); }
+.ci-icon.yellow { background:rgba(251,191,36,.2); }
+.ci-text { flex:1; }
+.ci-label { font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:.06em; margin-bottom:2px; }
+.ci-value { font-size:14px; color:#e2e8f0; font-weight:500; }
+.ci-arrow { color:#334155; font-size:14px; }
+.contact-note { font-size:12px; color:#475569; line-height:1.6; text-align:center; }
+.contact-note span { color:#a78bfa; }
+
+/* ── PRIVACY PAGE ── */
+.privacy-header { text-align:center; margin-bottom:20px; }
+.privacy-updated { font-size:12px; color:#475569; }
+.privacy-updated span { color:#7c3aed; }
+
+.section-card {
+  background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:16px;
+  padding:18px 20px;
+  margin-bottom:10px;
+  transition:border-color .2s;
+}
+.section-card:hover { border-color:rgba(124,58,237,.25); }
+.section-title {
+  font-family:'Syne',sans-serif;
+  font-size:14px; font-weight:700;
+  color:#c4b5fd;
+  margin-bottom:8px;
+  display:flex; align-items:center; gap:8px;
+}
+.section-body {
+  color:#94a3b8;
+  font-size:13px;
+  line-height:1.7;
+}
+.section-body strong { color:#e2e8f0; font-weight:600; }
+
+.privacy-footer { text-align:center; font-size:12px; color:#334155; margin-top:20px; padding-bottom:8px; }
+
+</style>
+</head>
+<body>
+
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+  <div class="chip chip-1">📚 Smart Study</div>
+  <div class="chip chip-2">🧠 AI Prompts</div>
+  <div class="chip chip-3">🎯 Focus Mode</div>
+  <div class="chip chip-4">✨ v1.1.0</div>
+
+  <!-- ══════════ HOME PAGE ══════════ -->
+  <div class="page active" id="page-home">
+    <div class="card animate">
+
+      <div class="badge">
+        <span class="badge-dot"></span>
+        Now Available
+      </div>
+
+      <div class="logo-wrap">
+        <img src="logo.png" class="logo" alt="Prompt Buddy"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>
+        <div class="logo-fallback" style="display:none;">📖</div>
+      </div>
+
+      <h1>Prompt Buddy</h1>
+
+      <p class="desc">
+        A powerful collection of <span>AI prompts</span> to help you write better,
+        faster, and smarter. Copy ready-to-use prompts instantly.
+      </p>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-val">100+</div>
+          <div class="stat-lbl">Prompts</div>
+        </div>
+        <div class="stat-div"></div>
+        <div class="stat">
+          <div class="stat-val">Free</div>
+          <div class="stat-lbl">Forever</div>
+        </div>
+        <div class="stat-div"></div>
+        <div class="stat">
+          <div class="stat-val">Fast</div>
+          <div class="stat-lbl">& Light</div>
+        </div>
+      </div>
+
+      <a href="app.apk" class="dl-btn">⬇️ Download APK</a>
+
+      <div class="footer-nav">
+        <button onclick="showPage('contact')">Contact</button>
+        <span class="footer-nav-dot"></span>
+        <button onclick="showPage('privacy')">Privacy Policy</button>
+      </div>
+
+      <div class="version">
+        <span>Version 1.1.0</span>
+        <span class="version-dot"></span>
+        <span>Stable</span>
+        <span class="version-dot"></span>
+        <span class="safe-badge">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8 2L3 4v4c0 3 2.5 5.5 5 6 2.5-.5 5-3 5-6V4L8 2z"/>
+            <path d="M5.5 8l2 2 3-3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Safe
+        </span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════ CONTACT PAGE ══════════ -->
+  <div class="page" id="page-contact">
+    <div class="card animate">
+
+      <button class="back-btn" onclick="showPage('home')">← Back to Home</button>
+
+      <div class="page-icon">📬</div>
+      <div class="page-title">Contact Us</div>
+      <p class="page-subtitle">We'd love to hear from you!</p>
+
+      <div class="contact-list">
+
+        <a href="mailto:insxsohail@gmail.com" class="contact-item">
+          <div class="ci-icon purple">📧</div>
+          <div class="ci-text">
+            <div class="ci-label">Email</div>
+            <div class="ci-value">insxsohail@gmail.com</div>
+          </div>
+          <span class="ci-arrow">→</span>
+        </a>
+
+        <a href="https://instagram.com/insanedge" target="_blank" class="contact-item">
+          <div class="ci-icon pink">📸</div>
+          <div class="ci-text">
+            <div class="ci-label">Instagram</div>
+            <div class="ci-value">@insanedge</div>
+          </div>
+          <span class="ci-arrow">→</span>
+        </a>
+
+      </div>
+
+      <p class="contact-note">
+        Typically reply within <span>24 hours</span>.<br/>For bugs or feedback, email is preferred.
+      </p>
+
+    </div>
+  </div>
+
+  <!-- ══════════ PRIVACY PAGE ══════════ -->
+  <div class="page" id="page-privacy">
+    <div class="card wide animate">
+
+      <button class="back-btn" onclick="showPage('home')">← Back to Home</button>
+
+      <div class="privacy-header">
+        <div class="page-icon">🔒</div>
+        <div class="page-title">Privacy Policy</div>
+        <p class="privacy-updated">Last updated: <span>January 2025</span></p>
+      </div>
+
+      <div class="section-card">
+        <div class="section-title">📋 Overview</div>
+        <div class="section-body">
+          Prompt Buddy is a free app supported by ads. This policy explains what data is collected, how it is used, and your rights. Please read it carefully.
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-title">🌐 Internet Access</div>
+        <div class="section-body">
+          <strong>Internet connection is required</strong> to load ads served by Google AdMob. The app content (prompts) is stored locally, but ads require network access to fetch and display.
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-title">📢 Advertising — Google AdMob</div>
+        <div class="section-body">
+          This app uses <strong>Google AdMob</strong> to display ads. AdMob may collect and use the following data to serve personalized or non-personalized ads:<br/><br/>
+          • <strong>Device identifiers</strong> (Advertising ID / GAID)<br/>
+          • <strong>IP address</strong> and approximate location<br/>
+          • <strong>Device info</strong> (model, OS version, language)<br/>
+          • <strong>Ad interaction data</strong> (views, clicks)<br/><br/>
+          This data is collected by Google and governed by <strong>Google's Privacy Policy</strong>: <br/>
+          <span style="color:#a78bfa;font-size:12px;">policies.google.com/privacy</span>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-title">📦 Data We Collect</div>
+        <div class="section-body">
+          <strong>We personally do not collect any user data.</strong> We do not have servers, databases, or accounts. All prompt data stays on your device. Only AdMob (Google) collects data as described above.
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-title">🍪 Cookies & Tracking</div>
+        <div class="section-body">
+          We do not use cookies ourselves. However, AdMob may use tracking technologies to measure ad performance and serve relevant ads based on your interests.
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-title">👶 Children's Privacy</div>
+        <div class="section-body">
+          This app is designed for general audiences. If you are under 13, please use it with parental guidance. AdMob ads shown may be limited for younger audiences based on regional regulations.
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-title">✏️ Changes to This Policy</div>
+        <div class="section-body">
+          If this policy is updated, the new version will be reflected on this page with a revised date. Continued use of the app means you accept the updated policy.
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-title">📬 Contact</div>
+        <div class="section-body">
+          Questions? Reach us via the <button onclick="showPage('contact')" style="color:#a78bfa;background:none;border:none;cursor:pointer;font-family:'DM Sans';font-size:13px;padding:0;">Contact page</button> or at <span style="color:#a78bfa;">your@email.com</span>
+        </div>
+      </div>
+
+      <div class="privacy-footer">© 2025 Prompt Buddy. All rights reserved.</div>
+
+    </div>
+  </div>
+
+  <script>
+    function showPage(name) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      const target = document.getElementById('page-' + name);
+      target.classList.add('active');
+      // re-trigger animation
+      const card = target.querySelector('.card');
+      card.classList.remove('animate');
+      void card.offsetWidth;
+      card.classList.add('animate');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  </script>
+
+</body>
+</html>
